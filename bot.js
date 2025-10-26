@@ -59,6 +59,8 @@ ws.onopen = async () => {
     CANDLESTICK_INTERVAL
   );
   log(`Fetched ${candles.length} candles`);
+  //update indicators initially with historical candles so they are ready instantly
+  updateIndicators();
   //when historical candles are fetched, subscribe to price updates for the asset
   log(`Subscribing to ${ASSET} price updates...`);
   ws.send(
@@ -84,11 +86,19 @@ ws.onmessage = (event) => {
 function onTick(price, timestamp) {
   const candleClosed = updateCandles(price, timestamp);
   //can choose when to update indicators, every tick or every candle close
+  let signal = null;
   if (candleClosed) {
+    //update indicators only when candle is closed for more stable signals
     updateIndicators();
-    generateSignal(price);
+    signal = generateSignal(price);
   } else {
-    generateSignal(price);
+    signal = generateSignal(price);
+  }
+  //logic to handle signals here
+  if (signal) {
+    log(`Signal: ${signal.signal} @ $${signal.price}`);
+  } else {
+    // log("NO SIGNAL");
   }
 }
 
@@ -103,16 +113,16 @@ function updateIndicators() {
 
 function generateSignal(price) {
   if (indicators.rsi14 === null || indicators.bollingerBands === null) {
-    log("NO INDICATORS YET");
-    return;
+    log("INDICATORS ARE NULL");
+    return null;
   }
 
   if (indicators.rsi14 < 30 && price < indicators.bollingerBands.lower) {
-    log(`BUY SIGNAL at ${price}`);
+    return { signal: "BUY", price };
   } else if (indicators.rsi14 > 70 && price > indicators.bollingerBands.upper) {
-    log(`SELL SIGNAL at ${price}`);
+    return { signal: "SELL", price };
   } else {
-    // log("NO SIGNAL");
+    return null;
   }
 }
 
@@ -189,8 +199,10 @@ async function fetchHistoricalCandles(
     //can change logic here to do whatever we want with the candle data
     candles.push(candle);
   }
-  log("Candles: \nTimestamp - Open - High - Low - Close");
-  log(candles.map((candle) => candle.toString()).join("\n"));
+  log("Timestamp - Open - High - Low - Close");
+  for (const candle of candles) {
+    log(candle.toString());
+  }
 }
 
 function calculateSMA(candles, period) {
