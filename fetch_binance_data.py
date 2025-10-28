@@ -109,9 +109,18 @@ def fetch_all_historical_data(symbol, interval, days_back):
         
         time.sleep(0.5)
         
+        # Only break if we're at the most recent data AND have fewer than 1000 candles
         if len(df_batch) < 1000:
-            print("Reached the most recent data")
-            break
+            # Check if we've reached current time (i.e., most recent candle)
+            current_unix = int(datetime.now().timestamp() * 1000)
+            last_timestamp_ms = int(last_timestamp.timestamp() * 1000)
+            # If the last timestamp is very recent (within 1 hour of now), we've reached the end
+            if current_unix - last_timestamp_ms < (60 * 60 * 1000):
+                print("Reached the most recent data")
+                break
+            else:
+                print(f"No more historical data available (stopped at {last_timestamp.strftime('%Y-%m-%d')})")
+                break
     
     if all_data:
         final_df = pd.concat(all_data, ignore_index=True)
@@ -127,7 +136,7 @@ def fetch_all_historical_data(symbol, interval, days_back):
         print("No data fetched")
         return None
 
-def save_to_csv(df, filename='sol_hourly_data.csv'):
+def save_to_csv(df, filename):
     """Save DataFrame to CSV with OHLC only"""
     df_to_save = df.copy()
     df_to_save.set_index('timestamp', inplace=True)
@@ -142,9 +151,9 @@ def save_to_csv(df, filename='sol_hourly_data.csv'):
 
 if __name__ == "__main__":
     SYMBOL = 'SOLUSDT'
-    INTERVAL = '1h'
-    DAYS_BACK = 365*6#more than available, will fetch from inception
-    OUTPUT_FILE = 'sol_hourly_data.csv'
+    INTERVAL = '5m'
+    DAYS_BACK = 365*2#more than available, will fetch from inception
+    OUTPUT_FILE = 'sol_5min_data.csv'
     
     print("=" * 60)
     print("Binance Historical Data Fetcher (OHLC only)")
