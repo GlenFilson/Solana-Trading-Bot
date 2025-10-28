@@ -151,9 +151,9 @@ def save_to_csv(df, filename):
 
 if __name__ == "__main__":
     SYMBOL = 'SOLUSDT'
-    INTERVAL = '5m'
-    DAYS_BACK = 365*2#more than available, will fetch from inception
-    OUTPUT_FILE = 'sol_5min_data.csv'
+    INTERVAL = '1h'
+    DAYS_BACK = 365
+    OUTPUT_FILE = 'sol_1h_data.csv'
     
     print("=" * 60)
     print("Binance Historical Data Fetcher (OHLC only)")
